@@ -13,3 +13,5 @@ COPY . .
 
 # Step 5: Set the default command to run the app
 CMD ["python", "app.py"]
+
+EXPOSE 5000
