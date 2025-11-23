@@ -14,33 +14,111 @@ This project represents a real-world enterprise-grade CI/CD pipeline, built exac
 ✔️ Smooth rollback & reproducible builds
 
 🏗️ Architecture Overview
-              ┌────────────┐          
-     Code     │  GitHub    │─────┐     
-    Pushes    └────────────┘     │     
-                                  ▼
-                           ┌────────────┐
-                           │  Jenkins   │
-                           └────────────┘
-          ┌───────────────Pipeline Stages───────────────┐
-          │   1. Checkout                                │
-          │   2. Install dependencies                    │
-          │   3. Unit tests                              │
-          │   4. Docker image build                      │
-          │   5. Push to Docker Hub                      │
-          │   6. Deploy to AWS EC2                       │
-          └──────────────────────────────────────────────┘
-                                  ▼
-                        ┌────────────────┐
-                        │ Docker Hub Repo│
-                        └────────────────┘
-                                  ▼
-                        ┌────────────────┐
-                        │ AWS EC2 Server │
-                        │ (Docker Engine)│
-                        └────────────────┘
-                                  ▼
-                         🔥 Live Application
+     1️⃣ Developer Stage (Source Code Management)
 
+Developer writes code or updates the application.
+
+Code is committed and pushed to the GitHub repository.
+
+GitHub stores the code in the main branch (or other branches).
+
+2️⃣ GitHub → Jenkins Trigger (Webhook)
+
+GitHub sends an automatic webhook notification to Jenkins whenever a new commit is pushed.
+
+Jenkins receives the event and immediately triggers the CI/CD pipeline job.
+
+3️⃣ CI Stage on Jenkins (Build & Test)
+3.1 — Checkout Code
+
+Jenkins pulls the latest source code from GitHub into its workspace.
+
+3.2 — Install Dependencies
+
+Jenkins installs the dependencies listed in requirements.txt.
+
+3.3 — Run Unit Tests
+
+Jenkins uses pytest to run test cases located inside the tests/ directory.
+
+If any test fails → pipeline stops (fail-fast approach).
+
+4️⃣ Build Stage (Containerization)
+4.1 — Build Docker Image
+
+Jenkins reads the Dockerfile and builds a new Docker image for the application.
+
+The image is tagged using:
+
+<dockerhub-user>/<repo-name>:<build-number>
+
+4.2 — Security Scan (Optional)
+
+Jenkins may run a vulnerability scan (e.g., Trivy) on the Docker image.
+
+5️⃣ Push Stage (Artifact Storage)
+
+Jenkins logs into Docker Hub using secure credentials.
+
+The newly built Docker image is pushed to your Docker Hub repository.
+
+Docker Hub now stores the latest version of the application image.
+
+6️⃣ Infrastructure Stage (IaC via Terraform)
+
+(This is done once or when infra changes)
+
+Terraform provisions an AWS EC2 instance, Security Group, and necessary networking.
+
+EC2 instance boots up and installs Docker using the user_data.sh script.
+
+EC2 becomes ready to host the container.
+
+7️⃣ Deployment Stage (Automated Delivery)
+7.1 — Jenkins SSH to EC2
+
+Jenkins uses an SSH key (stored in Jenkins Credentials Manager).
+
+Jenkins connects securely to the EC2 instance.
+
+7.2 — Run Deployment Script
+
+Jenkins uploads and executes deploy.sh on EC2.
+
+The script performs:
+
+Stop existing container
+
+Remove old container
+
+Pull the new Docker image from Docker Hub
+
+Start a fresh container using the new image
+
+Expose app on port 80
+
+8️⃣ Runtime Stage (Live Application)
+
+The updated version of the application begins running inside a Docker container on EC2.
+
+Users can access the app through:
+
+http://<EC2-Public-IP>/
+
+9️⃣ Monitoring & Feedback Loop
+
+If monitoring is enabled (CloudWatch or Jenkins logs):
+
+Logs are collected
+
+Errors/metrics can trigger alerts
+
+Developers get feedback → commit fixes → start the cycle again
+
+⭐ Text Summary (One-Line Flow)
+
+GitHub → Jenkins Webhook → Build → Test → Docker Image → Docker Hub → SSH Deploy to EC2 → New Container → Live Application
+                       
 📂 Project Structure
 TechNova-DevOps-Pipeline/
 │── app.py
